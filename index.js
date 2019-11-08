@@ -1,3 +1,5 @@
+const arrayGrid = [];
+
 function arraySum(arr) {
   return arr.reduce((a, b) => a + b, 0);
 }
@@ -82,12 +84,6 @@ function isValidNode(currentNode, nextNode) {
   }
 
   return true;
-  //   return (
-  //     followsSingleSameAndZeroMaxRule(currentNode, nextNode) &&
-  //     // isDifferent(currentNode, nextNode) &&
-  //     followsSingleSumRule(currentNode, nextNode) &&
-  //     followsLimitRule(nextNode)
-  //   );
 }
 
 //Given the nodeObject, calculates and returns it's "Residue"
@@ -101,8 +97,29 @@ function getResidue(nodeObject) {
   );
 }
 
+function createAllNodes(x = 16, y = 8, z = 7) {
+  let potentialNodes = [];
+
+  //Nested Loop generating arrays with 3 indexes
+  for (let a = 0; a <= x; a++) {
+    potentialNodes.push([]);
+    for (let b = 0; b <= y; b++) {
+      potentialNodes[a].push([]);
+      for (let c = 0; c <= z; c++) {
+        //If valid, create the nodeObject
+        let validNode = new Node([a, b, c]);
+
+        //Push Node to list/array
+        potentialNodes[a][b].push(validNode);
+      }
+    }
+  }
+
+  return potentialNodes;
+}
+
 //Function: getPotentialNodes(nodeObject)
-function getPotentialNodes(currentNode, x = 16, y = 8, z = 7) {
+function getPotentialNodes(currentNode, allNodes, x = 16, y = 8, z = 7) {
   //Use some sort of combinatorial generator to make a list of valid nodes (using the function isValidNode)
 
   //Create empty list/array
@@ -112,19 +129,12 @@ function getPotentialNodes(currentNode, x = 16, y = 8, z = 7) {
   for (let a = 0; a <= x; a++) {
     for (let b = 0; b <= y; b++) {
       for (let c = 0; c <= z; c++) {
-        //Create a potential node id/array
-        let potentialRoomId = [a, b, c];
-
         //Check if the id/array is valid
         // console.log("testing node", currentNode.id, potentialRoomId);
-        if (isValidNode(currentNode, potentialRoomId)) {
-          console.log("potential found!");
-
+        if (isValidNode(currentNode, [a, b, c])) {
           //If valid, create the nodeObject
-          let validNode = new Node(potentialRoomId, currentNode);
-
           //Push Node to list/array
-          potentialNodes.push(validNode);
+          potentialNodes.push(allNodes[a][b][c]);
         }
       }
     }
@@ -139,18 +149,26 @@ function getPotentialNodes(currentNode, x = 16, y = 8, z = 7) {
 }
 
 class Node {
-  constructor(id, parent) {
+  constructor(id, parent = []) {
     this.parent = parent;
     this.id = id;
+    this.visited = false;
     this.visitedNodes = [];
     this.shouldDraw = false;
     this.residue = getResidue(this);
 
     // If this is the ROOT node, populate potential nodes
     // at instantiation
-    if (this.parent === null) {
-      this.potentialNodes = getPotentialNodes(this);
-    }
+  }
+
+  setRoot() {
+    this.isRoot = true;
+    this.level = 0;
+    this.potentialNodes = getPotentialNodes(this, allNodes);
+    this.X = 50;
+    this.Y = 50;
+    this.color = "green";
+    // drawNode
   }
 
   hasNext() {
@@ -159,11 +177,38 @@ class Node {
 
   next() {
     let bestNode = this.potentialNodes.shift();
-
-    // populate potential nodes ONLY when node is visited
-    bestNode.potentialNodes = getPotentialNodes(bestNode);
-
     this.visitedNodes.push(bestNode);
+
+    // update Colors
+    this.color = "black";
+    bestNode.color = "green";
+
+    // drawEdge(previousNode, currentNode);
+
+    // on first visit
+    if (bestNode.visited === false) {
+      bestNode.visited = true;
+      bestNode.level = this.level + 1;
+
+      // handle first visit to level
+      if (arrayGrid[bestNode.level] === undefined) {
+        arrayGrid[bestNode.level] = 0;
+      }
+      //   add node to level
+      ++arrayGrid[bestNode.level];
+
+      //   set X and Y based on position from left
+      bestNode.X = arrayGrid[bestNode.level] * 50;
+      bestNode.Y = bestNode.level * 50;
+
+      // populate potential nodes ONLY when node is visited
+      bestNode.potentialNodes = getPotentialNodes(bestNode, allNodes);
+
+      // drawNode(bestNode);
+    }
+
+    bestNode.parent.push(this);
+
     return bestNode;
   }
 }
@@ -175,8 +220,14 @@ class Edge {
   }
 }
 
+const allNodes = createAllNodes(16, 8, 7);
+console.log("allNodes", allNodes);
+
 // create root node and set it to be drawn here
-let currentNode = new Node([16, 0, 0], null);
+let currentNode = allNodes[16][0][0];
+currentNode.setRoot();
+console.log("Root Node", currentNode);
+console.log("Root set", currentNode.id);
 // drawNode(currentNode);
 
 let previousNode;
@@ -190,20 +241,18 @@ const mainLoop = setInterval(() => {
     // we have gotten a NEW node
     // we should draw to the screen here
     currentNode = currentNode.next();
-    // drawNode(currentNode);
-    // drawEdge(previousNode, currentNode);
-    console.log("Moving to new node", currentNode.id);
+    console.log("Moving > NEXT", currentNode.id, currentNode.residue);
   } else {
-    if (currentNode.parent === null) {
+    if (currentNode.isRoot) {
       // we have returned to the root node and it has
       // no more paths to take.  we should finish
       console.log("Finished");
-      return;
+      clearInterval(mainLoop);
+    } else {
+      //move back to the parent node and restart the loop
+      currentNode = currentNode.parent.pop();
+      console.log("Moving > PARENT", currentNode.id, currentNode.residue);
     }
-    //move back to the parent node and restart the loop
-    currentNode = currentNode.parent;
-    console.log("Moving to parent node", currentNode.id);
-    return;
   }
 }, 1000);
 

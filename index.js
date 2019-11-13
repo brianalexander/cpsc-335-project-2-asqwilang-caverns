@@ -56,17 +56,6 @@ function followsSingleSameAndZeroMaxRule(
   }
 }
 
-function isDifferent(currentNode, nextNode) {
-  let currentId = currentNode.id;
-
-  //iterate through next cave and current cve node evaluating matches
-  for (let i = 0; i < currentId.length; i++) {
-    if (currentId[i] !== nextNode[i]) return false;
-  }
-
-  return true;
-}
-
 function isValidNode(currentNode, nextNode) {
   if (!followsSingleSameAndZeroMaxRule(currentNode, nextNode)) {
     // console.log("Failed single-same or zero-max rule");
@@ -133,8 +122,14 @@ function getPotentialNodes(currentNode, allNodes, x = 16, y = 8, z = 7) {
         // console.log("testing node", currentNode.id, potentialRoomId);
         if (isValidNode(currentNode, [a, b, c])) {
           //If valid, create the nodeObject
-          //Push Node to list/array
-          potentialNodes.push(allNodes[a][b][c]);
+
+          if(!allNodes[a][b][c].visited) {
+            //Push Node to list/array
+            potentialNodes.push(allNodes[a][b][c]);
+          }
+          else{
+            //Just draw an edge to it
+          }
         }
       }
     }
@@ -241,7 +236,7 @@ const mainLoop = setInterval(() => {
     // we have gotten a NEW node
     // we should draw to the screen here
     currentNode = currentNode.next();
-    console.log("Moving > NEXT", currentNode.id, currentNode.residue);
+    console.log("Moving > NEXT", currentNode.id, currentNode.residue, currentNode);
   } else {
     if (currentNode.isRoot) {
       // we have returned to the root node and it has

@@ -1,3 +1,40 @@
+var canvas = document.createElement('canvas');
+canvas.id = 'globalCanvas';
+document.body.appendChild(canvas);
+
+var canv = document.getElementById('globalCanvas');
+var cont = canv.getContext('2d');
+cont.fillStyle = 'black'
+canv.width = 40 * 40;
+canv.height = 40 * 40;
+cont.fillRect(0, 0, canv.width, canv.height);
+
+function draw_disk(cont, bNode)
+{
+  // globalCompositeOperation values
+    cont.save( );
+    cont.beginPath( );
+    cont.arc(bNode.X, bNode.Y, 15, 0, 2 * Math.PI);
+    cont.strokeText(bNode.id, bNode.X + 15, bNode.Y + 15);  // if we want the text to be in the circle we need to set visiblitiy so we can see through the circle
+    cont.closePath();
+    //cont.strokeStyle = ((2 * rstate.color) % 0x8FFFFF).toString(16);
+    cont.lineWidth = 0.5;
+    //cont.fillStyle = "#" + rstate.color.toString(16);
+    cont.fillStyle = '#0000ff'
+    cont.fill( );
+    cont.stroke( );
+    cont.restore( );
+}
+
+function draw_edge(cont, curNode, prevNode)
+{
+    cont.beginPath();
+    cont.moveTo(prevNode.X, prevNode.Y);
+    cont.lineTo(curNode.X, curNode.Y);
+    cont.strokeStyle = '#0000ff';
+    cont.stroke();
+}
+
 const arrayGrid = [];
 
 function arraySum(arr) {
@@ -129,6 +166,7 @@ function getPotentialNodes(currentNode, allNodes, x = 16, y = 8, z = 7) {
           }
           else{
             //Just draw an edge to it
+            draw_edge(cont, currentNode, allNodes[a][b][c]);
           }
         }
       }
@@ -160,7 +198,7 @@ class Node {
     this.isRoot = true;
     this.level = 0;
     this.potentialNodes = getPotentialNodes(this, allNodes);
-    this.X = 50;
+    this.X = canv.width / 2;
     this.Y = 50;
     this.color = "green";
     // drawNode
@@ -200,6 +238,7 @@ class Node {
       bestNode.potentialNodes = getPotentialNodes(bestNode, allNodes);
 
       // drawNode(bestNode);
+      draw_disk(cont, bestNode);
     }
 
     bestNode.parent.push(this);
@@ -225,6 +264,21 @@ console.log("Root Node", currentNode);
 console.log("Root set", currentNode.id);
 // drawNode(currentNode);
 
+// maybe in order to show the step of the placing down a circle we
+// place one that has the stroke of yellow
+// then before we place the new node we place the old spot with a new stroke of blue
+// 1) root stroke w/ yellow
+// 2) before the next node we replace the root location w/ stroke blue
+
+
+
+
+
+
+cont.strokeStyle = "#ff0000";
+cont.stroke();
+draw_disk(cont, currentNode);
+
 let previousNode;
 // infinite loop
 
@@ -236,6 +290,9 @@ const mainLoop = setInterval(() => {
     // we have gotten a NEW node
     // we should draw to the screen here
     currentNode = currentNode.next();
+    cont.strokeStyle = "#ff0000";
+    cont.stroke();
+    draw_edge(cont, currentNode, previousNode);
     console.log("Moving > NEXT", currentNode.id, currentNode.residue, currentNode);
   } else {
     if (currentNode.isRoot) {

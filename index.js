@@ -30,9 +30,17 @@ function draw_edge(cont, curNode, prevNode)
 {
     cont.beginPath();
     cont.moveTo(prevNode.X, prevNode.Y);
-    cont.lineTo(curNode.X, curNode.Y);
+    cont.quadraticCurveTo(Math.abs(curNode.level-prevNode.level+1)*80, curNode.Y, curNode.X, curNode.Y);
     cont.strokeStyle = '#0000ff';
     cont.stroke();
+}
+
+function draw_causeway(cont, curNode, prevNode) {
+  cont.beginPath();
+  cont.moveTo(prevNode.X, prevNode.Y);
+  cont.quadraticCurveTo(Math.abs(curNode.level-prevNode.level+1)*80, curNode.Y, curNode.X, curNode.Y);
+  cont.strokeStyle = '#0000ff';
+  cont.stroke();
 }
 
 const arrayGrid = [];
@@ -163,10 +171,12 @@ function getPotentialNodes(currentNode, allNodes, x = 16, y = 8, z = 7) {
           if(!allNodes[a][b][c].visited) {
             //Push Node to list/array
             potentialNodes.push(allNodes[a][b][c]);
+
+            draw_causeway(cont, currentNode, allNodes[a][b][c]);
           }
           else{
             //Just draw an edge to it
-            draw_edge(cont, currentNode, allNodes[a][b][c]);
+            draw_causeway(cont, currentNode, allNodes[a][b][c]);
           }
         }
       }
@@ -211,6 +221,11 @@ class Node {
   next() {
     let bestNode = this.potentialNodes.shift();
     this.visitedNodes.push(bestNode);
+
+    //BestResidue?
+    if(getResidue(bestNode) == 6){
+      stopMainLoop();
+    }
 
     // update Colors
     this.color = "black";

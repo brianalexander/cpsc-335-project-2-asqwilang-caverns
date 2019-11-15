@@ -12,6 +12,25 @@ cont.fillRect(0, 0, canv.width, canv.height);
 function draw_disk(cont, bNode)
 {
   // globalCompositeOperation values
+    cont.strokeStyle = "#ff0000";
+    cont.save( );
+    cont.beginPath( );
+    cont.arc(bNode.X, bNode.Y, 15, 0, 2 * Math.PI);
+    cont.strokeText(bNode.id, bNode.X + 15, bNode.Y + 15);  // if we want the text to be in the circle we need to set visiblitiy so we can see through the circle
+    cont.closePath();
+    //cont.strokeStyle = ((2 * rstate.color) % 0x8FFFFF).toString(16);
+    cont.lineWidth = 0.5;
+    //cont.fillStyle = "#" + rstate.color.toString(16);
+    cont.fillStyle = '#0000ff'
+    cont.fill( );
+    cont.stroke( );
+    cont.restore( );
+}
+
+function draw_location(cont, bNode)
+{
+  // globalCompositeOperation values
+    cont.strokeStyle = "#00ff00";
     cont.save( );
     cont.beginPath( );
     cont.arc(bNode.X, bNode.Y, 15, 0, 2 * Math.PI);
@@ -131,6 +150,30 @@ function getResidue(nodeObject) {
   );
 }
 
+//Using the starting room sum and id limits, generates a room id with the best residue
+function getBestResidue(sum,a,b,c){
+  //Fields/IDs
+  var f1,f2,f3 = 0;
+  //First field
+  f1 = a;
+  //Set to lowest given ID limit
+  if(f1 > b){
+    f1 = b;
+  }
+  if(f1 > c){
+    f1 = c;
+  }
+
+  var remainder = sum - f1;
+
+  //Second field
+  f2 = Math.floor(remainder/2);
+  //Third field
+  f3 = remainder - f2;
+
+  return getResidue({id:[f1,f2,f3]});
+}
+
 function createAllNodes(x = 16, y = 8, z = 7) {
   let potentialNodes = [];
 
@@ -222,11 +265,6 @@ class Node {
     let bestNode = this.potentialNodes.shift();
     this.visitedNodes.push(bestNode);
 
-    //BestResidue?
-    if(getResidue(bestNode) == 6){
-      stopMainLoop();
-    }
-
     // update Colors
     this.color = "black";
     bestNode.color = "green";
@@ -270,6 +308,7 @@ class Edge {
 }
 
 const allNodes = createAllNodes(16, 8, 7);
+const bestResidue = getBestResidue(16, 16, 8, 7);
 console.log("allNodes", allNodes);
 
 // create root node and set it to be drawn here
@@ -286,13 +325,7 @@ console.log("Root set", currentNode.id);
 // 2) before the next node we replace the root location w/ stroke blue
 
 
-
-
-
-
-cont.strokeStyle = "#ff0000";
-cont.stroke();
-draw_disk(cont, currentNode);
+draw_location(cont, currentNode);
 
 let previousNode;
 // infinite loop
@@ -305,9 +338,13 @@ const mainLoop = setInterval(() => {
     // we have gotten a NEW node
     // we should draw to the screen here
     currentNode = currentNode.next();
-    cont.strokeStyle = "#ff0000";
-    cont.stroke();
+    //If new current node has min residue, we are done
+    if(currentNode.residue === bestResidue){
+      stopMainLoop();
+    }
+    draw_location(cont, currentNode);
     draw_edge(cont, currentNode, previousNode);
+    draw_disk(cont, previousNode);
     console.log("Moving > NEXT", currentNode.id, currentNode.residue, currentNode);
   } else {
     if (currentNode.isRoot) {

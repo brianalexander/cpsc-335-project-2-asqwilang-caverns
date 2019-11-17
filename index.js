@@ -316,7 +316,8 @@ let currentNode = allNodes[16][0][0];
 currentNode.setRoot();
 console.log("Root Node", currentNode);
 console.log("Root set", currentNode.id);
-// drawNode(currentNode);
+//Set as Node with the best residue so far
+let bestResidueNode = currentNode;
 
 // maybe in order to show the step of the placing down a circle we
 // place one that has the stroke of yellow
@@ -338,10 +339,15 @@ const mainLoop = setInterval(() => {
     // we have gotten a NEW node
     // we should draw to the screen here
     currentNode = currentNode.next();
+    //Check if current node has a lower residue than the lowest occurence so far
+    if(currentNode.residue < bestResidueNode.residue){
+      bestResidueNode = currentNode;
+    }
     //If new current node has min residue, we are done
     if(currentNode.residue === bestResidue){
       stopMainLoop();
     }
+    //Redraw location/currentNode and previousNode
     draw_location(cont, currentNode);
     draw_edge(cont, currentNode, previousNode);
     draw_disk(cont, previousNode);
@@ -352,6 +358,9 @@ const mainLoop = setInterval(() => {
       // no more paths to take.  we should finish
       console.log("Finished");
       clearInterval(mainLoop);
+      //Jump to the node that had the lowest residue
+      draw_location(cont, bestResidueNode);
+      draw_disk(cont, currentNode);
     } else {
       //move back to the parent node and restart the loop
       currentNode = currentNode.parent.pop();

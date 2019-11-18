@@ -241,7 +241,7 @@ const mainLoop = setInterval(() => {
     // we have gotten a NEW node
     // we should draw to the screen here
     currentNode = currentNode.next();
-    console.log("Moving > NEXT", currentNode.id, currentNode.residue);
+    console.log("Moving > NEXT", currentNode.id, currentNode.parent);
   } else {
     if (currentNode.isRoot) {
       // we have returned to the root node and it has
@@ -251,7 +251,7 @@ const mainLoop = setInterval(() => {
     } else {
       //move back to the parent node and restart the loop
       currentNode = currentNode.parent.pop();
-      console.log("Moving > PARENT", currentNode.id, currentNode.residue);
+      console.log("Moving > PARENT", currentNode.id, currentNode.parent);
     }
   }
 }, 1000);

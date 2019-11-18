@@ -1,3 +1,74 @@
+var canvas = document.createElement("canvas");
+canvas.id = "globalCanvas";
+document.body.appendChild(canvas);
+
+var canv = document.getElementById("globalCanvas");
+var cont = canv.getContext("2d");
+cont.fillStyle = "black";
+canv.width = 40 * 40;
+canv.height = 40 * 40;
+cont.fillRect(0, 0, canv.width, canv.height);
+
+function draw_disk(cont, bNode) {
+  // globalCompositeOperation values
+  cont.strokeStyle = "#ff0000";
+  cont.save();
+  cont.beginPath();
+  cont.arc(bNode.X, bNode.Y, 15, 0, 2 * Math.PI);
+  cont.strokeText(bNode.id, bNode.X + 15, bNode.Y + 15); // if we want the text to be in the circle we need to set visiblitiy so we can see through the circle
+  cont.closePath();
+  //cont.strokeStyle = ((2 * rstate.color) % 0x8FFFFF).toString(16);
+  cont.lineWidth = 0.5;
+  //cont.fillStyle = "#" + rstate.color.toString(16);
+  cont.fillStyle = "#0000ff";
+  cont.fill();
+  cont.stroke();
+  cont.restore();
+}
+
+function draw_location(cont, bNode) {
+  // globalCompositeOperation values
+  cont.strokeStyle = "#00ff00";
+  cont.save();
+  cont.beginPath();
+  cont.arc(bNode.X, bNode.Y, 15, 0, 2 * Math.PI);
+  cont.strokeText(bNode.id, bNode.X + 15, bNode.Y + 15); // if we want the text to be in the circle we need to set visiblitiy so we can see through the circle
+  cont.closePath();
+  //cont.strokeStyle = ((2 * rstate.color) % 0x8FFFFF).toString(16);
+  cont.lineWidth = 0.5;
+  //cont.fillStyle = "#" + rstate.color.toString(16);
+  cont.fillStyle = "#0000ff";
+  cont.fill();
+  cont.stroke();
+  cont.restore();
+}
+
+function draw_edge(cont, curNode, prevNode) {
+  cont.beginPath();
+  cont.moveTo(prevNode.X, prevNode.Y);
+  cont.quadraticCurveTo(
+    Math.abs(curNode.level - prevNode.level + 1) * 80,
+    curNode.Y,
+    curNode.X,
+    curNode.Y
+  );
+  cont.strokeStyle = "#0000ff";
+  cont.stroke();
+}
+
+function draw_causeway(cont, curNode, prevNode) {
+  cont.beginPath();
+  cont.moveTo(prevNode.X, prevNode.Y);
+  cont.quadraticCurveTo(
+    Math.abs(curNode.level - prevNode.level + 1) * 80,
+    curNode.Y,
+    curNode.X,
+    curNode.Y
+  );
+  cont.strokeStyle = "#0000ff";
+  cont.stroke();
+}
+
 const arrayGrid = [];
 
 function arraySum(arr) {
@@ -37,15 +108,15 @@ function followsSingleSameAndZeroMaxRule(
     if (
       (nextNode[unmatchedIndices[0]] === 0 ||
         nextNode[unmatchedIndices[0]] === limits[unmatchedIndices[0]]) &&
-      (nextNode[unmatchedIndices[1]] !== 0 &&
-        nextNode[unmatchedIndices[1]] !== limits[unmatchedIndices[1]])
+      nextNode[unmatchedIndices[1]] !== 0 &&
+        nextNode[unmatchedIndices[1]] !== limits[unmatchedIndices[1]]
     ) {
       return true;
     } else if (
       (nextNode[unmatchedIndices[1]] === 0 ||
         nextNode[unmatchedIndices[1]] === limits[unmatchedIndices[1]]) &&
-      (nextNode[unmatchedIndices[0]] !== 0 &&
-        nextNode[unmatchedIndices[0]] !== limits[unmatchedIndices[0]])
+      nextNode[unmatchedIndices[0]] !== 0 &&
+        nextNode[unmatchedIndices[0]] !== limits[unmatchedIndices[0]]
     ) {
       return true;
     } else {
@@ -54,17 +125,6 @@ function followsSingleSameAndZeroMaxRule(
   } else {
     return false;
   }
-}
-
-function isDifferent(currentNode, nextNode) {
-  let currentId = currentNode.id;
-
-  //iterate through next cave and current cve node evaluating matches
-  for (let i = 0; i < currentId.length; i++) {
-    if (currentId[i] !== nextNode[i]) return false;
-  }
-
-  return true;
 }
 
 function isValidNode(currentNode, nextNode) {
@@ -95,6 +155,32 @@ function getResidue(nodeObject) {
     Math.abs(nodeObject.id[0] - nodeObject.id[2]) +
     Math.abs(nodeObject.id[1] - nodeObject.id[2])
   );
+}
+
+//Using the starting room sum and id limits, generates a room id with the best residue
+function getBestResidue(sum, a, b, c) {
+  //Fields/IDs
+  var f1,
+    f2,
+    f3 = 0;
+  //First field
+  f1 = a;
+  //Set to lowest given ID limit
+  if (f1 > b) {
+    f1 = b;
+  }
+  if (f1 > c) {
+    f1 = c;
+  }
+
+  var remainder = sum - f1;
+
+  //Second field
+  f2 = Math.floor(remainder / 2);
+  //Third field
+  f3 = remainder - f2;
+
+  return getResidue({ id: [f1, f2, f3] });
 }
 
 function createAllNodes(x = 16, y = 8, z = 7) {
@@ -133,8 +219,16 @@ function getPotentialNodes(currentNode, allNodes, x = 16, y = 8, z = 7) {
         // console.log("testing node", currentNode.id, potentialRoomId);
         if (isValidNode(currentNode, [a, b, c])) {
           //If valid, create the nodeObject
-          //Push Node to list/array
-          potentialNodes.push(allNodes[a][b][c]);
+
+          if (!allNodes[a][b][c].visited) {
+            //Push Node to list/array
+            potentialNodes.push(allNodes[a][b][c]);
+
+            draw_causeway(cont, currentNode, allNodes[a][b][c]);
+          } else {
+            //Just draw an edge to it
+            // draw_causeway(cont, currentNode, allNodes[a][b][c]);
+          }
         }
       }
     }
@@ -165,7 +259,7 @@ class Node {
     this.isRoot = true;
     this.level = 0;
     this.potentialNodes = getPotentialNodes(this, allNodes);
-    this.X = 50;
+    this.X = canv.width / 2;
     this.Y = 50;
     this.color = "green";
     // drawNode
@@ -176,51 +270,46 @@ class Node {
   }
 
   next() {
-    let bestNode = this.potentialNodes.shift();
-    this.visitedNodes.push(bestNode);
+    let nextNode = this.potentialNodes.shift();
+    this.visitedNodes.push(nextNode);
 
     // update Colors
     this.color = "black";
-    bestNode.color = "green";
+    nextNode.color = "green";
 
     // drawEdge(previousNode, currentNode);
 
     // on first visit
-    if (bestNode.visited === false) {
-      bestNode.visited = true;
-      bestNode.level = this.level + 1;
+    if (nextNode.visited === false) {
+      nextNode.visited = true;
+      nextNode.level = this.level + 1;
 
       // handle first visit to level
-      if (arrayGrid[bestNode.level] === undefined) {
-        arrayGrid[bestNode.level] = 0;
+      if (arrayGrid[nextNode.level] === undefined) {
+        arrayGrid[nextNode.level] = 0;
       }
       //   add node to level
-      ++arrayGrid[bestNode.level];
+      ++arrayGrid[nextNode.level];
 
       //   set X and Y based on position from left
-      bestNode.X = arrayGrid[bestNode.level] * 50;
-      bestNode.Y = bestNode.level * 50;
+      nextNode.X = arrayGrid[nextNode.level] * 50;
+      nextNode.Y = nextNode.level * 50;
 
       // populate potential nodes ONLY when node is visited
-      bestNode.potentialNodes = getPotentialNodes(bestNode, allNodes);
+      nextNode.potentialNodes = getPotentialNodes(nextNode, allNodes);
 
-      // drawNode(bestNode);
+      // drawNode(nextNode);
+      draw_disk(cont, nextNode);
     }
 
-    bestNode.parent.push(this);
+    nextNode.parent.push(this);
 
-    return bestNode;
-  }
-}
-
-class Edge {
-  constructor(fromNode, toNode) {
-    this.fromNode = fromNode;
-    this.toNode = toNode;
+    return nextNode;
   }
 }
 
 const allNodes = createAllNodes(16, 8, 7);
+const bestResidue = getBestResidue(16, 16, 8, 7);
 console.log("allNodes", allNodes);
 
 // create root node and set it to be drawn here
@@ -228,7 +317,16 @@ let currentNode = allNodes[16][0][0];
 currentNode.setRoot();
 console.log("Root Node", currentNode);
 console.log("Root set", currentNode.id);
-// drawNode(currentNode);
+//Set as Node with the best residue so far
+let bestResidueNode = currentNode;
+
+// maybe in order to show the step of the placing down a circle we
+// place one that has the stroke of yellow
+// then before we place the new node we place the old spot with a new stroke of blue
+// 1) root stroke w/ yellow
+// 2) before the next node we replace the root location w/ stroke blue
+
+draw_location(cont, currentNode);
 
 let previousNode;
 // infinite loop
@@ -241,13 +339,37 @@ const mainLoop = setInterval(() => {
     // we have gotten a NEW node
     // we should draw to the screen here
     currentNode = currentNode.next();
+<<<<<<< HEAD
     console.log("Moving > NEXT", currentNode.id, currentNode.parent);
+=======
+    //Check if current node has a lower residue than the lowest occurence so far
+    if (currentNode.residue < bestResidueNode.residue) {
+      bestResidueNode = currentNode;
+    }
+    //If new current node has min residue, we are done
+    if (currentNode.residue === bestResidue) {
+      stopMainLoop();
+    }
+    //Redraw location/currentNode and previousNode
+    draw_location(cont, currentNode);
+    draw_edge(cont, currentNode, previousNode);
+    draw_disk(cont, previousNode);
+    console.log(
+      "Moving > NEXT",
+      currentNode.id,
+      currentNode.residue,
+      currentNode
+    );
+>>>>>>> edits
   } else {
     if (currentNode.isRoot) {
       // we have returned to the root node and it has
       // no more paths to take.  we should finish
       console.log("Finished");
       clearInterval(mainLoop);
+      //Jump to the node that had the lowest residue
+      draw_location(cont, bestResidueNode);
+      draw_disk(cont, currentNode);
     } else {
       //move back to the parent node and restart the loop
       currentNode = currentNode.parent.pop();
